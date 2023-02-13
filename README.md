@@ -1,5 +1,7 @@
 # stm32_HAL_tftp_fatfs_IAP
 tftp上传下载系统固件到fatfs文件系统的存储器，实现应用内编程
+## phy芯片
+dp83848 
 ## tftp  
 端口69
 ## flash
