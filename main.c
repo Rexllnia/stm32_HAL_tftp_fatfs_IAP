@@ -150,8 +150,10 @@ void IAP_ExecuteApp ( uint32_t ulAddr_App )
 	{ 
 //		HAL_PCD_MspDeInit(&hpcd_USB_OTG_FS);
 		HAL_SPI_MspDeInit(&hspi2);	//@2
-		HAL_TIM_Base_MspDeInit(&htim1);
-		HAL_TIM_Base_MspDeInit(&htim3);
+		HAL_ETH_MspDeInit(&heth);
+//		HAL_TIM_Base_MspDeInit(&htim1);
+//		HAL_TIM_Base_MspDeInit(&htim3);
+		HAL_UART_MspDeInit(&huart1);
 		__HAL_RCC_GPIOB_CLK_DISABLE();
 		__HAL_RCC_GPIOG_CLK_DISABLE();
 		
@@ -177,6 +179,7 @@ void IAP_ExecuteApp ( uint32_t ulAddr_App )
 		__set_BASEPRI(0);		//@7
 		__set_PRIMASK(0);
 		__set_FAULTMASK(0);
+		__disable_irq();
  		
  		//@8
         /*
@@ -195,61 +198,62 @@ void IAP_ExecuteApp ( uint32_t ulAddr_App )
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
   /* Prevent unused argument(s) compilation warning */
-  if (htim->Instance==TIM1)
-	{
-		MX_LWIP_Process();
-	}
-	if (htim->Instance==TIM3)
-	{
+//  if (htim->Instance==TIM1)
+//	{
+//		MX_LWIP_Process();
+//	}
+//	if (htim->Instance==TIM3)
+//	{
 
-		if(command==2)
-		{
-			printf("tim3\r\n");
-			IAP_ExecuteApp (APPLICATION_ADDRESS);
-		}
-		else if(command==1)
-		{
-						HAL_FLASH_Unlock();	
-      __HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_EOP|FLASH_FLAG_PGAERR|FLASH_FLAG_WRPERR);
-			FLASH_EraseInitTypeDef pEraseInit;
+//		if(command==2)
+//		{
+////			NVIC_SystemReset();
+//			printf("tim3\r\n");
+//			IAP_ExecuteApp (APPLICATION_ADDRESS);
+//		}
+//		else if(command==1)
+//		{
+//						HAL_FLASH_Unlock();	
+//      __HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_EOP|FLASH_FLAG_PGAERR|FLASH_FLAG_WRPERR);
+//			FLASH_EraseInitTypeDef pEraseInit;
 
-      
-      pEraseInit.TypeErase=FLASH_TYPEERASE_SECTORS;
-      pEraseInit.Sector=FLASH_SECTOR_6;
-      pEraseInit.NbSectors=4;
-			uint32_t SectorError;
-			HAL_FLASHEx_Erase(&pEraseInit,&SectorError);
-      HAL_FLASH_Lock();
-			f_open(&file,"test_IAP.bin",FA_READ);
-			__IO uint32_t read_size = 0x00, tmp_read_size = 0x00;
-				uint32_t read_flag = TRUE;
+//      
+//      pEraseInit.TypeErase=FLASH_TYPEERASE_SECTORS;
+//      pEraseInit.Sector=FLASH_SECTOR_6;
+//      pEraseInit.NbSectors=4;
+//			uint32_t SectorError;
+//			HAL_FLASHEx_Erase(&pEraseInit,&SectorError);
+//      HAL_FLASH_Lock();
+//			f_open(&file,"test_IAP.bin",FA_READ);
+//			__IO uint32_t read_size = 0x00, tmp_read_size = 0x00;
+//				uint32_t read_flag = TRUE;
 
-				/* Erase address init */
-				LastPGAddress = APPLICATION_ADDRESS;
+//				/* Erase address init */
+//				LastPGAddress = APPLICATION_ADDRESS;
 
-				/* While file still contain data */
-				while (read_flag == TRUE) {
+//				/* While file still contain data */
+//				while (read_flag == TRUE) {
 
-					/* Read maximum "BUFFERSIZE" Kbyte from the selected file  */
-					f_read(&file, read_buf, 512,(UINT*) &read_size);
+//					/* Read maximum "BUFFERSIZE" Kbyte from the selected file  */
+//					f_read(&file, read_buf, 512,(UINT*) &read_size);
 
-					/* Temp variable */
-					tmp_read_size = read_size;
-					/* The read data < "BUFFERSIZE" Kbyte */
-					if (tmp_read_size < 512) {
-						read_flag = FALSE;
-					}
-					/* Program flash memory */
-					FLASH_If_Write(LastPGAddress, (uint32_t*) read_buf, read_size);
-					/* Update last programmed address value */
-					LastPGAddress = LastPGAddress + tmp_read_size;
-				}
-			f_close(&file);
-				
-		}
-		command=0;
+//					/* Temp variable */
+//					tmp_read_size = read_size;
+//					/* The read data < "BUFFERSIZE" Kbyte */
+//					if (tmp_read_size < 512) {
+//						read_flag = FALSE;
+//					}
+//					/* Program flash memory */
+//					FLASH_If_Write(LastPGAddress, (uint32_t*) read_buf, read_size);
+//					/* Update last programmed address value */
+//					LastPGAddress = LastPGAddress + tmp_read_size;
+//				}
+//			f_close(&file);
+//				
+//		}
+//		command=0;
 
-	}
+//	}
   /* NOTE : This function should not be modified, when the callback is needed,
             the HAL_TIM_PeriodElapsedCallback could be implemented in the user file
    */
@@ -294,8 +298,8 @@ int main(void)
   MX_LWIP_Init();
   MX_SPI2_Init();
   MX_FATFS_Init();
-  MX_TIM1_Init();
-  MX_TIM3_Init();
+//  MX_TIM1_Init();
+//  MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
 
 	#ifdef debug
@@ -346,15 +350,62 @@ int main(void)
 	
 	tcp_server_init();
 	tftp_init();
-	HAL_TIM_Base_Start_IT(&htim1);
-	HAL_TIM_Base_Start_IT(&htim3);
+//	HAL_TIM_Base_Start_IT(&htim1);
+//	HAL_TIM_Base_Start_IT(&htim3);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+		MX_LWIP_Process();
+if(command==2)
+		{
+//			NVIC_SystemReset();
+			printf("tim3\r\n");
+			IAP_ExecuteApp (APPLICATION_ADDRESS);
+		}
+		else if(command==1)
+		{
+						HAL_FLASH_Unlock();	
+      __HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_EOP|FLASH_FLAG_PGAERR|FLASH_FLAG_WRPERR);
+			FLASH_EraseInitTypeDef pEraseInit;
 
+      
+      pEraseInit.TypeErase=FLASH_TYPEERASE_SECTORS;
+      pEraseInit.Sector=FLASH_SECTOR_6;
+      pEraseInit.NbSectors=4;
+			uint32_t SectorError;
+			HAL_FLASHEx_Erase(&pEraseInit,&SectorError);
+      HAL_FLASH_Lock();
+			f_open(&file,"test_IAP.bin",FA_READ);
+			__IO uint32_t read_size = 0x00, tmp_read_size = 0x00;
+				uint32_t read_flag = TRUE;
+
+				/* Erase address init */
+				LastPGAddress = APPLICATION_ADDRESS;
+
+				/* While file still contain data */
+				while (read_flag == TRUE) {
+
+					/* Read maximum "BUFFERSIZE" Kbyte from the selected file  */
+					f_read(&file, read_buf, 512,(UINT*) &read_size);
+
+					/* Temp variable */
+					tmp_read_size = read_size;
+					/* The read data < "BUFFERSIZE" Kbyte */
+					if (tmp_read_size < 512) {
+						read_flag = FALSE;
+					}
+					/* Program flash memory */
+					FLASH_If_Write(LastPGAddress, (uint32_t*) read_buf, read_size);
+					/* Update last programmed address value */
+					LastPGAddress = LastPGAddress + tmp_read_size;
+				}
+			f_close(&file);
+				
+		}
+		command=0;
 
     /* USER CODE END WHILE */
 
