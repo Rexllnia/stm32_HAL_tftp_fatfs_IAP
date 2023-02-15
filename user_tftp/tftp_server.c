@@ -202,7 +202,7 @@ send_data(void)
 	f_lseek(&file,pos);
 	while(f_read(&file,&payload[2],TFTP_MAX_PAYLOAD_SIZE,&Br));
 	pos=f_tell(&file);
-	printf("%d\n",pos);
+	printf("%ld\n",pos);
 	while(f_close(&file));
 	ret = Br;//返回读取字节数用于之后的发送操作
 	/* USER CODE END TFTP_READ */
@@ -268,8 +268,15 @@ recv(void *arg, struct udp_pcb *upcb, struct pbuf *p, const ip_addr_t *addr, u16
       }
       pbuf_copy_partial(p, mode, mode_end_offset - filename_end_offset, filename_end_offset + 1);
 			printf("%s\r\n",filename);//打印文件名
-			f_unlink(filename);
-			strcpy(fname,filename);
+		  if (opcode == PP_HTONS(TFTP_WRQ)) {
+				f_unlink(filename);
+				strcpy(fname,filename);
+      } else {
+				strcpy(fname,filename);
+      }
+
+
+			
 			res=1;//res=1成功
 			tftp_state.handle=&res; //
 
